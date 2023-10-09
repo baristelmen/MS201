@@ -1,0 +1,20 @@
+@Behaviour<aster> './src/libAsterBehaviour.so' 'asterlinearkinematic' ;
+@MaterialProperty<constant> 'YoungModulus' 70e9 ;
+@MaterialProperty<constant> 'PoissonRatio' 0.34;
+@MaterialProperty<constant> 's0' 300e6;
+@MaterialProperty<constant> 'HardeningSlope' 10e8;
+
+@ExternalStateVariable 'Temperature' 293.15 ;
+
+@Real 'DY1' 0.0208;
+@Real 'DY2' 0.0008;
+
+@ImposedStrain 'EXX' { 0.: 0.0, 0.1 :'DY1', 1.0:'DY1',
+                      61.:'DY2',121.:'DY1',181.:'DY2',241.:'DY1',
+                     301.:'DY2',361.:'DY1',421.:'DY2',481.:'DY1'};
+
+
+@Times { 0.0, 0.1 in 60,
+         1.  in 60,   61.  in 60,  121.  in 60, 181.  in 60,
+         241.  in 60,  301.  in 60,  361.  in 60, 421.  in 60,
+         449.8  in 29, 465.4  in 15, 473.8  in 9,  481.  in 45 };

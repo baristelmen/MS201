@@ -1,0 +1,4 @@
+@Behaviour<aster> './src/libAsterBehaviour.so' 'asterhosfordperfectplasticity';
+@ExternalStateVariable 'Temperature' 293.15;
+@ImposedStress 'SXX' {0.:0.,30.:40.e6};
+@Times {0.,30.in 100};

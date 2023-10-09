@@ -1,0 +1,36 @@
+{
+library : {
+name   : "AsterBehaviour";
+type   : SHARED_LIBRARY;
+prefix : "lib";
+suffix : "so";
+install_path : "";
+sources : {
+"asterNonLinearIsotropicViscosity.cxx",
+"NonLinearIsotropicViscosity.cxx"
+};
+cppflags : {
+"$(shell tfel-config --cppflags --compiler-flags)",
+"-DASTER_ARCH=64"
+};
+include_directories : {
+"$(shell tfel-config --include-path)"
+};
+link_directories : {
+"$(shell tfel-config --library-path)"
+};
+link_libraries : {
+"AsterInterface",
+"$(shell tfel-config --library-dependency --material --mfront-profiling)"
+};
+epts : {
+"asternonlinearisotropicviscosity"
+};
+};
+headers : {
+"MFront/Aster/asterNonLinearIsotropicViscosity.hxx",
+"TFEL/Material/NonLinearIsotropicViscosity.hxx",
+"TFEL/Material/NonLinearIsotropicViscosityBehaviourData.hxx",
+"TFEL/Material/NonLinearIsotropicViscosityIntegrationData.hxx"
+};
+};

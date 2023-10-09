@@ -1,0 +1,113 @@
+@Parser Implicit;
+@Author    Baris Telmen;
+@Behaviour FullChabocheMemory;
+@Description{FullChabocheMemory};
+
+@Algorithm NewtonRaphson_NumericalJacobian;
+@Theta 1.0;
+@Epsilon 1.e-12;
+@Profiling true;
+
+@MaterialProperty stress young;
+young.setGlossaryName("YoungModulus");
+@MaterialProperty real nu;
+nu.setGlossaryName("PoissonRatio");
+@MaterialProperty stress R_0;
+@MaterialProperty stress C[2];
+@MaterialProperty real g[2];
+@MaterialProperty real ainf;
+@MaterialProperty real b;
+@MaterialProperty real m;
+@MaterialProperty real K;
+@MaterialProperty real Eta;
+@MaterialProperty real Qm;
+@MaterialProperty real Q0;
+@MaterialProperty real Mu;
+@MaterialProperty real delta[2];
+
+
+@StateVariable real p;
+p.setGlossaryName("EquivalentPlasticStrain");
+@StateVariable StrainStensor a[2];
+@StateVariable real q;
+@StateVariable Stensor Ksi;
+
+@AuxiliaryStateVariable real R;
+
+@LocalVariable real lambda;
+@LocalVariable real mu;
+
+@InitLocalVars {
+  lambda = computeLambda(young, nu);
+  mu = computeMu(young, nu);
+}
+
+@ComputeStress {
+  sig = lambda * trace(eel) * Stensor::Id() + 2 * mu * eel;
+}
+
+@Integrator {
+  Stensor n = Stensor(0.);
+  StrainStensor a_[2];
+  Stensor X_[2];
+  real g_[2];
+  StressStensor scin = sig;
+  const strain p_ = (p + theta * dp);
+  for ( unsigned int i=0; i != 2; ++i){
+    a_[i] = a[i]+theta*da[i];
+    X_[i] = 2.0 * C[i] * a_[i] / 3.0;
+    g_[i] = g[i] * (ainf + (1.0 - ainf) * exp(-b * p_));
+    scin -= X_[i];
+  }
+  const real seq = sigmaeq(scin);
+  const real Q_ = Q0 + (Qm - Q0) * (1 - exp(-2 * Mu * (q + theta * dq)));
+  const stress Rp = R_0 + R + b * (Q_ - R) * dp;
+  const real F = seq - Rp;
+  real vp = 0.;
+
+  if (F > 0) {
+    vp = dt * pow(F/K, m);
+    n = sqrt(1.5) * deviator(scin) / seq;
+    real an[2];
+
+    for (unsigned int i=0; i != 2; ++i){
+      an[i] = a_[i] | n;
+    }
+
+    feel += vp * sqrt(1.5) * n - deto;
+    fp -= vp;
+
+    for (unsigned int i = 0; i != 2; ++i){
+      fa[i] = da[i] - vp * sqrt(1.5) * n +
+              g_[i] * vp * (delta[i] * a_[i] + (1 - delta[i]) * an[i] * n);
+    }
+
+    Stensor epsplastic = eto - eel + vp * sqrt(1.5) * n - Ksi;
+    real epsplasticeq = sigmaeq(epsplastic);
+    real Fisot = 2.0 * epsplasticeq / 3.0 - q;
+
+    if (Fisot > 0) {
+      epsplastic = eto - eel + vp * sqrt(1.5) * n - Ksi - theta * dKsi;
+      epsplasticeq = sigmaeq(epsplastic);
+      fq = 2.0* epsplasticeq / 3.0 - (q + theta * dq);
+      Stensor nstar = 1.5 * epsplastic / epsplasticeq;
+      fKsi = dKsi - (1 - Eta) / Eta * dq * nstar;
+    }
+  } else {
+    feel -= deto;
+  }
+}
+
+@UpdateAuxiliaryStateVars {
+  const real q_ = q - (1 - theta) * dq;
+  const real Q = Q0 + (Qm - Q0) * (1 - exp(-2 * Mu * q_));
+  R += b * (Q - R) * dp;
+}
+
+@TangentOperator {
+  StiffnessTensor De;
+  Stensor4 Je;
+  computeElasticStiffness<N, Type>::exe(De, lambda, mu);
+  getPartialJacobianInvert(Je);
+  Dt = De * Je;
+}

@@ -1,0 +1,29 @@
+## Portainer Community Edition
+## Maintainer: Baris Telmen
+
+version: '3.9'
+
+services:
+  jupyter-scipy-mfront-notebook:
+    image: baristelmen/jupyter-scipy-mfront-notebook:1.0
+    container_name: jupyter-scipy-mfront-notebook
+    hostname: jupyter-scipy-mfront-notebook
+    restart: unless-stopped
+    ports:
+      - 8888:8888
+    networks:
+      internal-network:
+        ipv4_address: ${ip}
+    volumes:
+        - ./data:/home/boltzmann/work
+    env_file:
+      - .env
+
+networks:
+  internal-network:
+    name: internal-network
+    driver: bridge
+    ipam:
+      config:
+        - subnet: ${subnet}
+          gateway: ${gateway}

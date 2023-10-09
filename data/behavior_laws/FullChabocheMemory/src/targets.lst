@@ -1,0 +1,36 @@
+{
+library : {
+name   : "AsterBehaviour";
+type   : SHARED_LIBRARY;
+prefix : "lib";
+suffix : "so";
+install_path : "";
+sources : {
+"asterFullChabocheMemory.cxx",
+"FullChabocheMemory.cxx"
+};
+cppflags : {
+"$(shell tfel-config --cppflags --compiler-flags)",
+"-DASTER_ARCH=64"
+};
+include_directories : {
+"$(shell tfel-config --include-path)"
+};
+link_directories : {
+"$(shell tfel-config --library-path)"
+};
+link_libraries : {
+"AsterInterface",
+"$(shell tfel-config --library-dependency --material --mfront-profiling)"
+};
+epts : {
+"asterfullchabochememory"
+};
+};
+headers : {
+"MFront/Aster/asterFullChabocheMemory.hxx",
+"TFEL/Material/FullChabocheMemory.hxx",
+"TFEL/Material/FullChabocheMemoryBehaviourData.hxx",
+"TFEL/Material/FullChabocheMemoryIntegrationData.hxx"
+};
+};
