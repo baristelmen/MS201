@@ -1,0 +1,53 @@
+@DSL Default;
+@Behaviour LinearIsotropic;
+@Author Baris Telmen;
+@Description{
+  A simple implementation of 
+  isotropic linear hardening plasticity.
+};
+
+@StateVariable StrainStensor eel;
+eel.setGlossaryName("ElasticStrain");
+@StateVariable strain p;
+p.setGlossaryName("EquivalentPlasticStrain");
+
+@MaterialProperty stress young;
+young.setGlossaryName("YoungModulus");
+@MaterialProperty real nu;
+nu.setGlossaryName("PoissonRatio");
+@MaterialProperty stress H;
+H.setEntryName("HardeningSlope");
+@MaterialProperty stress s0;
+s0.setGlossaryName("YieldStress");
+
+@PredictionOperator{
+  const auto lambda = computeLambda(young, nu);
+  const auto mu     = computeMu(young, nu);
+  Dt = lambda * Stensor4::IxI() + 2 * mu * Stensor4::Id();
+}
+
+@ProvidesSymmetricTangentOperator;
+
+@Integrator{
+  const auto lambda = computeLambda(young, nu);
+  const auto mu     = computeMu(young, nu);
+  eel += deto;
+  if(computeTangentOperator_){
+    Dt = lambda * Stensor4::IxI() + 2 * mu * Stensor4::Id();
+  }
+
+  const auto se     = 2 * mu * deviator(eel);
+  const auto seq_e  = sigmaeq(se);
+  const auto plastic_loading = seq_e > s0 + H * p;
+  if(plastic_loading){
+    const auto iseq_e = 1 / seq_e;
+    const auto n      = eval(3 * se / (2 * seq_e));
+    const auto cste   = 1 / (H + 3 * mu);
+    dp   = (seq_e - s0 - H * p) * cste;
+    eel -= dp * n;
+    if((computeTangentOperator_) && (smt==CONSISTENTTANGENTOPERATOR)){
+      Dt -= -4 * mu * mu * (dp * iseq_e * (Stensor4::M()-(n ^ n)) + cste * (n ^ n));
+    }
+  } // end of if(plastic_loading)
+  sig = lambda*trace(eel)*Stensor::Id()+2*mu*eel;
+} // end of @Integrator  

@@ -1,0 +1,82 @@
+@Parser    Implicit;
+@Author    Baris Telmen;
+@Behaviour NonLinearIsotropicLinearKinematic;
+@Description{
+  Implementation of non-linear isotropic
+  hardening with linear kinematic hardening
+  with viscosity addition
+};
+
+@Brick StandardElasticity;
+@Theta 1.;
+@Epsilon 1.e-13;
+
+@Profiling true;
+
+@MaterialProperty stress young;
+young.setGlossaryName("YoungModulus");
+@MaterialProperty real nu;
+nu.setGlossaryName("PoissonRatio");
+
+@MaterialProperty stress R_inf;
+@MaterialProperty stress R_0;
+@MaterialProperty stress C;
+@MaterialProperty real b;
+@MaterialProperty real K;
+@MaterialProperty real m;
+
+@StateVariable strain p;
+p.setGlossaryName("EquivalentPlasticStrain");
+@StateVariable StrainStensor a;
+a.setEntryName("BackStress");
+
+@LocalVariable bool Fel;
+
+@InitLocalVariables<Append> {
+  StressStensor scin = computeElasticPrediction();
+  scin -= 2.*C*a/3.;
+  const stress seq = sigmaeq(scin);
+  const stress Rpel = R_inf + (R_0 - R_inf)*exp(-b*p);
+  Fel = seq - Rpel > 0;
+}
+
+@Integrator{
+  constexpr const real eps = 1.e-12;
+  if (Fel)
+  {
+    const auto mu       =   computeMu(young,nu);
+    StressStensor scin  =   sig;
+    StrainStensor a_    =   a + theta*da;
+    scin               -=   2.*C*a_/3.;
+    const stress seq    =   sigmaeq(scin);
+
+    const real p_       =   p + theta*dp;
+    const real Rp       =   R_inf + (R_0 - R_inf)*exp(-b*p_);
+
+    const stress F      =   max(seq - Rp, stress(0));
+    const real Fexp     =   pow(F/K,m-1)/K;
+    const auto iseq     =   1/max(seq,eps*young);
+
+    const Stensor n     =   3*deviator(scin)*iseq/2.;
+    //const Stensor n   =   1.5 * deviator(sig) / sigmaeq(sig);
+    const Stensor4 Jmn  =   Stensor4::M() - (n^n);
+    const auto vp       =   Fexp*F;
+
+    feel               +=   dp*n;
+    fp                 -=   vp * dt;
+    fa                 =   da - dp*n;
+
+    dfeel_ddeel        +=   2*mu*theta*dp*Jmn*iseq ;
+    dfeel_ddp           =   n;
+    dfeel_dda            =   -2*C*dp*theta*iseq*Jmn/3.;
+
+    dfp_ddp             =   1. + theta* Fexp *m *dt*b*(R_inf-Rp);
+    dfp_ddeel           =  - 2*Fexp*m*dt* 2.*mu*theta*(n|Stensor4::M())/3.;
+    dfp_dda             =   2*Fexp*m*dt*C*theta/3.*n;
+
+    dfa_ddeel           =   -2*mu*theta*dp*Jmn *iseq;
+    dfa_ddp             =   -n;
+    dfa_dda             =   Stensor4::Id() + 2*C/3.*dp*theta*iseq*Jmn;
+
+  }
+}
