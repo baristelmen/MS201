@@ -1,16 +1,14 @@
-## Portainer Community Edition
 ## Maintainer: Baris Telmen
 
-version: '3.9'
-
 services:
-  jupyter-scipy-mfront-notebook:
-    image: baristelmen/jupyter-scipy-mfront-notebook:1.0
-    container_name: jupyter-scipy-mfront-notebook
-    hostname: jupyter-scipy-mfront-notebook
+  jupyter-mfront-ms201-windows:
+    image: ${image}
+    container_name: ${container_name}
+    hostname: ${hostname}
     restart: unless-stopped
     ports:
-      - 8888:8888
+      - 8888:${JUPYTER_PORT}
+      - 8889:8889
     networks:
       internal-network:
         ipv4_address: ${ip}
@@ -21,7 +19,7 @@ services:
 
 networks:
   internal-network:
-    name: internal-network
+    name: ${network_name}
     driver: bridge
     ipam:
       config:
