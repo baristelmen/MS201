@@ -10,7 +10,7 @@ import pprint
 class lk:
     def __init__(self, model_input_file = {}, 
                  behavior_name = 'asterlinearkinematic', 
-                 behavior_location = 'behaviors/src/libAsterBehaviour.so'):
+                 behavior_location = '/apps/binary/tfel/behaviors/src/libAsterBehaviour.so'):
         self.model_input_file = model_input_file
         self.behavior_name = behavior_name
         self.behavior_location = behavior_location
