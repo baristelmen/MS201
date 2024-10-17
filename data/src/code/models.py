@@ -163,7 +163,17 @@ class lk:
         del m
 
     def print_output(self):
-        total_skipped_rows = 15 + len(self._allowed_internal_state_variable_inputs)*6
+
+        internal = 0
+        for i in range(len(self._allowed_internal_state_variable_inputs)):
+            if self.behavior_instance.getInternalStateVariableType(self._allowed_internal_state_variable_inputs[i]) == 0:
+                internal = internal + 1
+            elif self.behavior_instance.getInternalStateVariableType(self._allowed_internal_state_variable_inputs[i]) == 1:
+                internal = internal + 6
+                
+        total_skipped_rows = 15 + internal
+        ## Wrong calculation
+        # total_skipped_rows = 15 + len(self._allowed_internal_state_variable_inputs)*6
         data = pd.read_csv(self.model_input_file["output"]["filename"], skiprows = total_skipped_rows, header=None, delimiter=r"\s+")
 
         extension = ["XX", "YY", "ZZ", "XY", "XZ", "YZ"]
